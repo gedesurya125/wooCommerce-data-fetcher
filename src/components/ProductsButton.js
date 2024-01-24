@@ -5,6 +5,7 @@ import { getAllProductData } from "wooCommeceAPIs/getAllProductData";
 import { PrimaryButton } from "./PrimaryButton";
 import { getAllProductsFromDatabase } from "prismaClient/queries/getAllProductsFromDatabase";
 import { deleteAllProductsFromDatabase } from "prismaClient/queries/deleteAllProductsFromDatabse";
+import { saveProductToDatabase } from "prismaClient/queries/saveProductToDatabase";
 
 const PER_PAGE = 100;
 
@@ -38,12 +39,28 @@ export const FetchAndSaveProductsButton = () => {
     // const products = await getAllProductData();
     console.log("this is the products", allNewProducts);
 
-    const productsDataForDatabase = allNewProducts?.map((data) => {
-      return { name: data?.name };
+    const createProductsPromise = allNewProducts?.map(async (data) => {
+      const images =
+        data?.images?.length > 0
+          ? data?.images.map((image) => ({
+              src: image?.src,
+              alt: image?.alt,
+              name: image?.name,
+            }))
+          : [];
+
+      const response = await saveProductToDatabase({
+        name: data?.name,
+        images: {
+          create: images,
+        },
+      });
+      console.log("product created", response);
+      return response;
     });
 
-    const response = await saveProductsToDatabase(productsDataForDatabase);
-    console.log("this is the response", response);
+    const responseList = await Promise.all(createProductsPromise);
+    console.log("all response of product creation", responseList);
     setLoading(false);
   };
 
@@ -52,7 +69,7 @@ export const FetchAndSaveProductsButton = () => {
       disabled={loading}
       onClick={handleFetchProductAndSaveToDataBase}
     >
-      {loading ? "Loading..." : "fetch and save products"}
+      {loading ? "Loading..." : "Fetch and save products"}
     </PrimaryButton>
   );
 };
