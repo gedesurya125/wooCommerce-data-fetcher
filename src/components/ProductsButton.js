@@ -6,16 +6,39 @@ import { PrimaryButton } from "./PrimaryButton";
 import { getAllProductsFromDatabase } from "prismaClient/queries/getAllProductsFromDatabase";
 import { deleteAllProductsFromDatabase } from "prismaClient/queries/deleteAllProductsFromDatabse";
 
+const PER_PAGE = 100;
+
 // TODO: rename thsi primary button
 export const FetchAndSaveProductsButton = () => {
   const [loading, setLoading] = React.useState(false);
 
   const handleFetchProductAndSaveToDataBase = async () => {
     setLoading(true);
-    const products = await getAllProductData();
-    console.log("this is the products", products);
 
-    const productsDataForDatabase = products?.map((data) => {
+    let allProducts = [];
+    let isNoMoreData = false;
+    let offset = 0;
+
+    do {
+      const newProducts = await getAllProductData({
+        per_page: PER_PAGE,
+        offset,
+      });
+
+      allProducts.push(newProducts || []);
+      offset += PER_PAGE;
+
+      if (newProducts?.length < PER_PAGE) {
+        isNoMoreData = true;
+      }
+    } while (!isNoMoreData);
+
+    const allNewProducts = allProducts?.flat();
+
+    // const products = await getAllProductData();
+    console.log("this is the products", allNewProducts);
+
+    const productsDataForDatabase = allNewProducts?.map((data) => {
       return { name: data?.name };
     });
 
